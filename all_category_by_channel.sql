@@ -1,0 +1,82 @@
+-- All Mudah breakdown MAU, Browser, Adviews, Responder, Leads by Channel
+
+WITH
+  users AS (
+    SELECT
+      date_trunc(date(event_date), month) AS date,
+      CASE
+        WHEN
+          channel_grouping IN ('Direct', 'Direct Traffic')
+          THEN "Direct"
+        WHEN
+          channel_grouping IN ("Organic Search")
+          THEN "Organic Search"
+        WHEN lower(medium) IN ('cpc', 'paid') THEN "Paid"
+        WHEN
+          channel_grouping IN ('Mobile Push Notifications')
+          THEN "Push Notifications"
+        ELSE "Others"
+        END AS channels,
+      COUNT(DISTINCT au_id) AS mau,
+    FROM `md-sa-dwh.fact_history.gs_users_fact`
+    WHERE date(event_date) >= '2026-01-01'
+    GROUP BY ALL
+  ),
+  adv AS (
+    SELECT
+      date_trunc(date(event_date), month) AS date,
+      CASE
+        WHEN
+          channel_grouping IN ('Direct', 'Direct Traffic')
+          THEN "Direct"
+        WHEN
+          channel_grouping IN ("Organic Search")
+          THEN "Organic Search"
+        WHEN lower(medium) IN ('cpc', 'paid') THEN "Paid"
+        WHEN
+          channel_grouping IN ('Mobile Push Notifications')
+          THEN "Push Notifications"
+        ELSE "Others"
+        END AS channels,
+      COUNT(DISTINCT au_id) AS browsers,
+      sum(adviews) AS adviews
+    FROM `md-sa-dwh.fact_history.gs_adviews_fact`
+    WHERE date(event_date) >= '2026-01-01'
+    GROUP BY ALL
+  ),
+  ld AS (
+    SELECT
+      date_trunc(date(event_date), month) AS date,
+      CASE
+        WHEN
+          channel_grouping IN ('Direct', 'Direct Traffic')
+          THEN "Direct"
+        WHEN
+          channel_grouping IN ("Organic Search")
+          THEN "Organic Search"
+        WHEN lower(medium) IN ('cpc', 'paid') THEN "Paid"
+        WHEN
+          channel_grouping IN ('Mobile Push Notifications')
+          THEN "Push Notifications"
+        ELSE "Others"
+        END AS channels,
+      COUNT(DISTINCT au_id) AS responders,
+      sum(leads) AS leads
+    FROM `md-sa-dwh.fact_history.gs_leads_fact`
+    WHERE date(event_date) >= '2026-01-01'
+    GROUP BY ALL
+  )
+SELECT
+  users.date,
+  users.channels,
+  users.mau,
+  adv.browsers,
+  adv.adviews,
+  ld.responders,
+  ld.leads
+FROM users
+JOIN adv
+  USING (date, channels)
+JOIN ld
+  USING (date, channels)
+ORDER BY 1
